@@ -23,8 +23,68 @@ This will:
 |--------|-------------|
 | `install-ecc.bat` | **Main installer** - Install all components + debug config |
 | `uninstall-ecc.bat` | Remove all ECC components |
+| `gitnexus-install.bat` | Install/verify GitNexus CLI + MCP/skills/hooks + local frontend/backend |
+| `gitnexus-start.bat` | Start only local GitNexus backend/frontend services (no install/build) |
+| `gitnexus-stop.bat` | Stop local GitNexus backend/frontend services by port (4747/5173) |
 | `setup-debug-config.bat` | Configure debug display only (standalone) |
 | `uninstall-debug-config.bat` | Remove debug config only (standalone) |
+
+---
+
+## GitNexus 一体化安装（Windows）
+
+使用脚本：`gitnexus-install.bat`
+
+### 覆盖流程
+
+1. 环境预检（`git/node/npm/npx`）
+2. 全局安装/修复 `gitnexus` CLI
+3. 执行 `gitnexus setup`（skills + hooks）
+4. 配置 Claude MCP（自动检测，必要时自动添加）
+5. 克隆/更新 GitNexus 源码仓库
+6. 安装前端依赖（`gitnexus-web`）
+7. 构建前端并检查 `dist/index.html`
+8. 启动并校验后端服务（`4747`）
+9. 启动并校验前端服务（`5173`，HTTP 可访问）
+
+### 运行方式
+
+```cmd
+gitnexus-install.bat
+```
+
+### 仅启动服务（不安装）
+
+```cmd
+gitnexus-start.bat
+```
+
+- 仅启动/复用后端 `4747` 与前端 `5173`
+- 不执行 CLI 安装、MCP 配置、依赖安装或构建
+- 适合已安装完成后的日常启动
+
+### 停止服务
+
+```cmd
+gitnexus-stop.bat
+```
+
+- 自动检测并停止监听 `4747`（后端）与 `5173`（前端）的进程
+- 若同一 PID 同时占用多个端口，只会处理一次
+
+### 容错策略
+
+- 命令缺失立即失败并提示
+- `gitnexus` 不可用会自动重装
+- Claude MCP 已存在则跳过重复添加
+- GitNexus 仓库已存在则改为 `git pull --ff-only`
+- 后端启动失败自动重试（`gitnexus serve` → `npx gitnexus serve`）
+- 前端预览失败自动回退 `vite dev`
+- 每一步都写日志并进行成功检查
+
+### 日志
+
+- 每次执行会生成：`setup_first/install-log-YYYYMMDD-HHMMSS.txt`
 
 ---
 
@@ -240,6 +300,7 @@ For macOS/Linux, use the shell scripts in the root directory:
 setup_first/
 ├── README.md                    # This documentation
 ├── install-ecc.bat              # Main installer (all-in-one)
+├── install-gitnexus-stack.bat   # GitNexus full local setup
 ├── uninstall-ecc.bat            # Remove all components
 ├── setup-debug-config.bat       # Debug config only (standalone)
 └── uninstall-debug-config.bat   # Remove debug config only
